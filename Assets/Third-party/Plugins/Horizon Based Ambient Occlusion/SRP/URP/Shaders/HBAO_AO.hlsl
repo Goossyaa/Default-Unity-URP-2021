@@ -37,8 +37,13 @@
 #include "HBAO_Common.hlsl"
 
 inline float3 FetchLayerViewPos(float2 uv) {
+    uv = clamp(uv, 0, 1 - _Input_TexelSize.xy * 0.5); // uv guard
     float depth = LinearizeDepth(SAMPLE_TEXTURE2D_X(_DepthTex, sampler_PointClamp, uv).r);
-    return float3((uv * _UVToView.xy + _UVToView.zw) * depth, depth);
+#if ORTHOGRAPHIC_PROJECTION
+    return float3((uv * _UVToView[unity_StereoEyeIndex].xy + _UVToView[unity_StereoEyeIndex].zw), depth);
+#else
+    return float3((uv * _UVToView[unity_StereoEyeIndex].xy + _UVToView[unity_StereoEyeIndex].zw) * depth, depth);
+#endif
 }
 
 inline float Falloff(float distanceSquare) {
@@ -94,7 +99,11 @@ float4 AO_Frag(Varyings input) : SV_Target
     clip(_MaxDistance - P.z);
     #endif
 
-    float stepSize = min((_Radius / P.z), _MaxRadiusPixels) / (STEPS + 1.0);
+    #if ORTHOGRAPHIC_PROJECTION
+    float stepSize = min(_Radius[unity_StereoEyeIndex], _MaxRadiusPixels) / (STEPS + 1.0);
+    #else
+    float stepSize = min((_Radius[unity_StereoEyeIndex] / P.z), _MaxRadiusPixels) / (STEPS + 1.0);
+    #endif
 
     #ifdef DEINTERLEAVED
     float3 N = SAMPLE_TEXTURE2D_X(_NormalsTex, sampler_PointClamp, uv).rgb * 2.0 - 1.0;
@@ -156,7 +165,6 @@ float4 AO_Frag(Varyings input) : SV_Target
     }
 
     #ifdef DEBUG_VIEWNORMALS
-    N = float3(N.x, -N.y, N.z);
     return float4(N * 0.5 + 0.5, 1);
     #else
 

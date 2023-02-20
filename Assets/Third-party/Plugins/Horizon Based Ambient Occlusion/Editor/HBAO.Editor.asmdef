@@ -1,9 +1,9 @@
 {
     "name": "HBAO.Editor",
+    "rootNamespace": "",
     "references": [
         "GUID:b83dc51897666cb44bdfbf9671f74e85"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [
         "Editor"
     ],
@@ -13,5 +13,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": []
+    "versionDefines": [
+        {
+            "name": "Unity",
+            "expression": "2020.3.13",
+            "define": "UNITY_2020_3_13_OR_NEWER"
+        }
+    ],
+    "noEngineReferences": false
 }

@@ -35,8 +35,13 @@
 #include "HBAO_Common.cginc"
 
 inline float3 FetchLayerViewPos(float2 uv) {
+    uv = clamp(uv, 0, 1 - _Input_TexelSize.xy * 0.5); // uv guard
     float depth = LinearizeDepth(SAMPLE_DEPTH_TEXTURE(_DepthTex, uv));
-    return float3((uv * _UVToView.xy + _UVToView.zw) * depth, depth);
+    #if ORTHOGRAPHIC_PROJECTION
+    return float3((uv * _UVToView[unity_StereoEyeIndex].xy + _UVToView[unity_StereoEyeIndex].zw), depth);
+    #else
+    return float3((uv * _UVToView[unity_StereoEyeIndex].xy + _UVToView[unity_StereoEyeIndex].zw) * depth, depth);
+    #endif
 }
 
 inline float Falloff(float distanceSquare) {
@@ -77,6 +82,8 @@ inline float2 FetchNoise(float2 screenPos) {
 
 float4 AO_Frag(Varyings input) : SV_Target
 {
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
     #ifdef DEINTERLEAVED
     float3 P = FetchLayerViewPos(input.uv);
     #else
@@ -87,7 +94,11 @@ float4 AO_Frag(Varyings input) : SV_Target
     clip(_MaxDistance - P.z);
     #endif
 
-    float stepSize = min((_Radius / P.z), _MaxRadiusPixels) / (STEPS + 1.0);
+    #if ORTHOGRAPHIC_PROJECTION
+    float stepSize = min(_Radius[unity_StereoEyeIndex], _MaxRadiusPixels) / (STEPS + 1.0);
+    #else
+    float stepSize = min((_Radius[unity_StereoEyeIndex] / P.z), _MaxRadiusPixels) / (STEPS + 1.0);
+    #endif
 
     #ifdef DEINTERLEAVED
     float3 N = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_NormalsTex, input.uv).rgb * 2.0 - 1.0;

@@ -6,6 +6,7 @@
 #include "HBAO_Common.hlsl"
 
 inline half4 FetchOcclusion(float2 uv) {
+    uv *= _HistoryBuffer_RTHandleScale.xy;
     return SAMPLE_TEXTURE2D_X(_HBAOTex, sampler_LinearClamp, uv * _TargetScale.zw);
 }
 
@@ -33,8 +34,12 @@ float4 Composite_Frag(Varyings input) : SV_Target
     half4 ao = FetchOcclusion(uv);
 
     ao.a = saturate(pow(abs(ao.a), _Intensity));
-    half3 aoColor = lerp(_BaseColor.rgb, half3(1.0, 1.0, 1.0), ao.a);
 
+    #if LIT_AO
+    half3 aoColor = ao.aaa;
+    half4 col = ao.aaaa;
+    #else
+    half3 aoColor = lerp(_BaseColor.rgb, half3(1.0, 1.0, 1.0), ao.a);
     half4 col = FetchSceneColor(uv);
 
     #if MULTIBOUNCE
@@ -47,6 +52,7 @@ float4 Composite_Frag(Varyings input) : SV_Target
     //col.rgb += 1 - ao.rgb;
     col.rgb += ao.rgb;
     #endif
+    #endif // LIT_AO
 
     #if DEBUG_AO
     col.rgb = aoColor;

@@ -13,7 +13,7 @@
 /[Aa]ssets/[Rr]ayFire/[Pp]]lugins/[Ii]os/
 
 
-FMOD source control
+# FMOD source control
 
 !/[Aa]ssets/Plugins/FMOD/**/lib/*
 

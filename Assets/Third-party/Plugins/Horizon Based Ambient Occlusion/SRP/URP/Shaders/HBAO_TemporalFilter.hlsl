@@ -30,15 +30,15 @@ inline void FetchAoAndDepth(float2 uv, inout CTYPE ao, inout float2 depth) {
 }
 
 inline float2 FetchMotionVectors(float2 uv) {
-    return float2(0, 0);
+    return SAMPLE_TEXTURE2D_X(_MotionVectorTexture, sampler_PointClamp, uv * _TargetScale.xy).rg;
 }
 
 inline float4 FetchAoHistory(float2 uv) {
-    return SAMPLE_TEXTURE2D_X(_MainTex, sampler_PointClamp, uv);
+    return SAMPLE_TEXTURE2D_X(_MainTex, sampler_LinearClamp, uv * _HistoryBuffer_RTHandleScale.zw);
 }
 
 inline half4 FetchColorBleedingHistory(float2 uv) {
-    return SAMPLE_TEXTURE2D_X(_TempTex, sampler_PointClamp, uv);
+    return SAMPLE_TEXTURE2D_X(_TempTex, sampler_LinearClamp, uv * _HistoryBuffer_RTHandleScale.zw);
 }
 
 inline CTYPE FetchNeighbor(float2 uv, float2 offset) {

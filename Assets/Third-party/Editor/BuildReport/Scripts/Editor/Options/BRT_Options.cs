@@ -121,7 +121,7 @@ public static class Options
 
 	public const string BUILD_REPORT_PACKAGE_MISSING_MSG = "Unable to find BuildReport package folder! Cannot find suitable GUI Skin.\nTry editing the source code and change the value\nof `BUILD_REPORT_TOOL_DEFAULT_PATH` to what path the Build Report Tool is in.\nMake sure the folder is named \"BuildReport\".";
 
-	public const string BUILD_REPORT_TOOL_DEFAULT_PATH = "Assets/Third-party/Editor/BuildReport";
+	public const string BUILD_REPORT_TOOL_DEFAULT_PATH = "Assets/BuildReport";
 	public const string BUILD_REPORT_TOOL_DEFAULT_FOLDER_NAME = "BuildReport";
 
 	public const string BUILD_REPORTS_DEFAULT_FOLDER_NAME = "UnityBuildReports";

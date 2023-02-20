@@ -14,6 +14,8 @@ struct DeinterleavedOutput {
 
 DeinterleavedOutput DeinterleaveDepth_Frag(Varyings input)
 {
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
     DeinterleavedOutput o;
 
     float2 uv = UnityStereoTransformScreenSpaceTex(input.uv);
@@ -33,6 +35,8 @@ DeinterleavedOutput DeinterleaveDepth_Frag(Varyings input)
 
 DeinterleavedOutput DeinterleaveNormals_Frag(Varyings input)
 {
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
     DeinterleavedOutput o;
 
     float2 uv = UnityStereoTransformScreenSpaceTex(input.uv);
@@ -53,6 +57,8 @@ DeinterleavedOutput DeinterleaveNormals_Frag(Varyings input)
 
 half4 ReinterleaveAO_Frag(Varyings input) : SV_Target
 {
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
     float2 uv = UnityStereoTransformScreenSpaceTex(input.uv);
 
     float2 offset = fmod(floor(uv * _ReinterleavedAO_TexelSize.zw), 4.0);

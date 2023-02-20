@@ -2,6 +2,7 @@
 #define HBAO_COMMON_INCLUDED
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 #if VERSION_GREATER_EQUAL(10, 0)
@@ -26,8 +27,13 @@ inline float LinearizeDepth(float depth) {
 }
 
 inline float3 FetchViewPos(float2 uv) {
+    uv = clamp(uv, 0, 1 - _Input_TexelSize.xy * 0.5); // uv guard
     float depth = LinearizeDepth(FetchRawDepth(uv));
-    return float3((uv * _UVToView.xy + _UVToView.zw) * depth, depth);
+#if ORTHOGRAPHIC_PROJECTION
+    return float3((uv * _UVToView[unity_StereoEyeIndex].xy + _UVToView[unity_StereoEyeIndex].zw), depth);
+#else
+    return float3((uv * _UVToView[unity_StereoEyeIndex].xy + _UVToView[unity_StereoEyeIndex].zw) * depth, depth);
+#endif
 }
 
 inline float3 MinDiff(float3 P, float3 Pr, float3 Pl) {
@@ -51,13 +57,16 @@ inline float3 FetchViewNormals(float2 uv, float2 delta, float3 P) {
     float3 N = normalize(cross(Pt - P, P - Pr));
 #else
 #if VERSION_GREATER_EQUAL(10, 0)
-    //float3 N = SAMPLE_TEXTURE2D_X(_CameraNormalsTexture, sampler_LinearClamp, uv * _TargetScale.xy).rgb * 2.0 - 1.0;
     float3 N = SampleSceneNormals(uv * _TargetScale.xy);
+#if VERSION_GREATER_EQUAL(12, 0)
+    N = normalize(TransformWorldToViewDir(N)); // normals are worldspace, convert to viewspace
+    N = float3(N.x, -N.yz);
+#else
+    N = float3(N.x, -N.y, N.z);
+#endif
 #else
     float3 N = float3(0, 0, 0);
 #endif
-    //N = float3(N.x, -N.yz);
-    N = float3(N.x, -N.y, N.z);
 #endif
     return N;
 }

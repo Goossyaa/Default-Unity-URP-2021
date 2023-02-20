@@ -16,7 +16,7 @@ namespace HorizonBasedAmbientOcclusion
         private GUIStyle m_TitleLabelStyle;
         private int m_SelectedPreset;
         // settings group <setting, property reference>
-        private Dictionary<FieldInfo, List<SerializedProperty>> m_GroupFields = new Dictionary<FieldInfo, List<SerializedProperty>>();
+        private Dictionary<FieldInfo, List<SerializedProperty>> m_GroupFields;
         private readonly Dictionary<int, HBAO.Preset> m_Presets = new Dictionary<int, HBAO.Preset>()
         {
             { 0, HBAO.Preset.Normal },
@@ -32,6 +32,8 @@ namespace HorizonBasedAmbientOcclusion
         {
             m_HBAO = (HBAO)target;
             m_HBAOTex = Resources.Load<Texture2D>("hbao");
+
+            m_GroupFields = new Dictionary<FieldInfo, List<SerializedProperty>>();
 
             var settingsGroups = typeof(HBAO).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                     .Where(x => x.GetCustomAttributes(typeof(HBAO.SettingsGroup), false).Any());
@@ -122,25 +124,6 @@ namespace HorizonBasedAmbientOcclusion
                                 continue;
                             }
                         }
-                        // warn about deinterleaving not supported with SPSR
-                        else if (group.Key.FieldType == typeof(HBAO.GeneralSettings) && field.name == "debugMode")
-                        {
-#if UNITY_2019_3_OR_NEWER
-                        if (m_HBAO.GetDeinterleaving() != HBAO.Deinterleaving.Disabled &&
-                            IsVrRunning() && PlayerSettings.stereoRenderingPath == StereoRenderingPath.SinglePass)
-                        {
-                            GUILayout.Space(6.0f);
-                            EditorGUILayout.HelpBox("Deinterleaving is not supported with Single Pass Stereo Rendering...", MessageType.Warning);
-                        }
-#else
-                            if (m_HBAO.GetDeinterleaving() != HBAO.Deinterleaving.Disabled &&
-                                PlayerSettings.virtualRealitySupported && PlayerSettings.stereoRenderingPath == StereoRenderingPath.SinglePass)
-                            {
-                                GUILayout.Space(6.0f);
-                                EditorGUILayout.HelpBox("Deinterleaving is not supported with Single Pass Stereo Rendering...", MessageType.Warning);
-                            }
-#endif
-                        }
                         // hide noise type when deinterleaved HBAO is on
                         else if (group.Key.FieldType == typeof(HBAO.GeneralSettings) && field.name == "noiseType")
                         {
@@ -171,8 +154,44 @@ namespace HorizonBasedAmbientOcclusion
                             if (m_HBAO.GetAoDistanceFalloff() > m_HBAO.GetAoMaxDistance())
                             {
                                 GUILayout.Space(6.0f);
-                                EditorGUILayout.HelpBox("Distance Falloff shoudn't be superior to Max Distance", MessageType.Warning);
+                                EditorGUILayout.HelpBox("Distance Falloff shoudn't be greater than Max Distance.", MessageType.Warning);
                             }
+                        }
+                        // warn about motion vectors not supported
+                        else if (group.Key.FieldType == typeof(HBAO.TemporalFilterSettings) && field.name == "enabled")
+                        {
+                            // For platforms not supporting motion vectors texture
+                            // https://docs.unity3d.com/ScriptReference/DepthTextureMode.MotionVectors.html
+                            if (!SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.RGHalf))
+                            {
+                                GUILayout.Space(6.0f);
+                                EditorGUILayout.HelpBox("Motion vectors not supported on this platform...", MessageType.Warning);
+
+                                if (m_HBAO.IsTemporalFilterEnabled())
+                                    m_HBAO.EnableTemporalFilter(false);
+                            }
+                            else
+                            {
+                                if (IsVrRunning())
+                                {
+                                    GUILayout.Space(6.0f);
+                                    EditorGUILayout.HelpBox("Not supported yet in VR...", MessageType.Warning);
+
+                                    if (m_HBAO.IsTemporalFilterEnabled())
+                                        m_HBAO.EnableTemporalFilter(false);
+                                }
+                            }
+                        }
+                        // warn about color bleeding not supported in VR + MSAA prior to 2020.3.13
+                        else if (group.Key.FieldType == typeof(HBAO.ColorBleedingSettings) && field.name == "enabled")
+                        {
+#if !UNITY_2020_3_13_OR_NEWER
+                            if (m_HBAO.IsColorBleedingEnabled() && IsVrRunning())
+                            {
+                                GUILayout.Space(6.0f);
+                                EditorGUILayout.HelpBox("Unity 2020.3.13+ required when using VR + MSAA and color bleeding.", MessageType.Warning);
+                            }
+#endif
                         }
                         // hide albedoMultiplier when not in deferred
                         else if (group.Key.FieldType == typeof(HBAO.ColorBleedingSettings) && field.name == "albedoMultiplier")
@@ -212,8 +231,6 @@ namespace HorizonBasedAmbientOcclusion
             m_SettingsGroupStyle.contentOffset = new Vector2(10f, -2f);
         }
 
-#if UNITY_2019_3_OR_NEWER
-        List<UnityEngine.XR.XRDisplaySubsystemDescriptor> displaysDescs = new List<UnityEngine.XR.XRDisplaySubsystemDescriptor>();
         List<UnityEngine.XR.XRDisplaySubsystem> displays = new List<UnityEngine.XR.XRDisplaySubsystem>();
 
         private bool IsVrRunning()
@@ -232,7 +249,6 @@ namespace HorizonBasedAmbientOcclusion
 
             return vrIsRunning;
         }
-#endif
 
         [CustomPropertyDrawer(typeof(HBAO.MinMaxSliderAttribute))]
         public class MinMaxSliderDrawer : PropertyDrawer

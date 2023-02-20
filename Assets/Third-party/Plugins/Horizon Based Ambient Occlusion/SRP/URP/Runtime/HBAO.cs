@@ -18,6 +18,18 @@ namespace HorizonBasedAmbientOcclusion.Universal
             Custom
         }
 
+        public enum Mode
+        {
+            Normal,
+            LitAO
+        }
+
+        public enum RenderingPath
+        {
+            Forward,
+            Deferred
+        }
+
         public enum Quality
         {
             Lowest,
@@ -84,6 +96,20 @@ namespace HorizonBasedAmbientOcclusion.Universal
         public sealed class PresetParameter : VolumeParameter<Preset>
         {
             public PresetParameter(Preset value, bool overrideState = false)
+                : base(value, overrideState) { }
+        }
+
+        [Serializable]
+        public sealed class ModeParameter : VolumeParameter<Mode>
+        {
+            public ModeParameter(Mode value, bool overrideState = false)
+                : base(value, overrideState) { }
+        }
+
+        [Serializable]
+        public sealed class RenderingPathParameter : VolumeParameter<RenderingPath>
+        {
+            public RenderingPathParameter(RenderingPath value, bool overrideState = false)
                 : base(value, overrideState) { }
         }
 
@@ -184,6 +210,12 @@ namespace HorizonBasedAmbientOcclusion.Universal
         [Presets]
         public PresetParameter preset = new PresetParameter(Preset.Normal);
 
+        [Tooltip("The mode of the AO.")]
+        [GeneralSettings, Space(6)]
+        public ModeParameter mode = new ModeParameter(Mode.LitAO);
+        [Tooltip("The rendering path used for AO. Temporary settings as for now rendering path is internal to renderer settings.")]
+        [GeneralSettings, Space(6)]
+        public RenderingPathParameter renderingPath = new RenderingPathParameter(RenderingPath.Forward);
         [Tooltip("The quality of the AO.")]
         [GeneralSettings, Space(6)]
         public QualityParameter quality = new QualityParameter(Quality.Medium);
@@ -221,6 +253,9 @@ namespace HorizonBasedAmbientOcclusion.Universal
         [Tooltip("MultiBounce approximation influence.")]
         [AOSettings]
         public ClampedFloatParameter multiBounceInfluence = new ClampedFloatParameter(1f, 0f, 1f);
+        [Tooltip("How much AO affect direct lighting.")]
+        [AOSettings]
+        public ClampedFloatParameter directLightingStrength = new ClampedFloatParameter(0.25f, 0, 1f);
         [Tooltip("The amount of AO offscreen samples are contributing.")]
         [AOSettings]
         public ClampedFloatParameter offscreenSamplesContribution = new ClampedFloatParameter(0f, 0f, 1f);
@@ -232,11 +267,7 @@ namespace HorizonBasedAmbientOcclusion.Universal
         public FloatParameter distanceFalloff = new FloatParameter(50f);
         [Tooltip("The type of per pixel normals to use.")]
         [AOSettings, Space(10)]
-#if URP_10_0_0_OR_NEWER
         public PerPixelNormalsParameter perPixelNormals = new PerPixelNormalsParameter(PerPixelNormals.Camera);
-#else
-        public PerPixelNormalsParameter perPixelNormals = new PerPixelNormalsParameter(PerPixelNormals.Reconstruct4Samples);
-#endif
         [Tooltip("This setting allow you to set the base color if the AO, the alpha channel value is unused.")]
         [AOSettings, Space(10)]
         public ColorParameter baseColor = new ColorParameter(Color.black);
@@ -324,6 +355,26 @@ namespace HorizonBasedAmbientOcclusion.Universal
             }
 
             this.preset.Override(preset);
+        }
+
+        public Mode GetMode()
+        {
+            return mode.value;
+        }
+
+        public void SetMode(Mode mode)
+        {
+            this.mode.Override(mode);
+        }
+
+        public RenderingPath GetRenderingPath()
+        {
+            return renderingPath.value;
+        }
+
+        public void SetRenderingPath(RenderingPath renderingPath)
+        {
+            this.renderingPath.Override(renderingPath);
         }
 
         public Quality GetQuality()

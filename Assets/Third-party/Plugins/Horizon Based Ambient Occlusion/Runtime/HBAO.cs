@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
-#if ENABLE_VR
+#if ENABLE_VR_MODULE && ENABLE_VR
 using XRSettings = UnityEngine.XR.XRSettings;
 #endif
 #if UNITY_EDITOR
@@ -717,8 +717,10 @@ namespace HorizonBasedAmbientOcclusion
             public const int Composite = 9;
             public const int Composite_AfterLighting = 10;
             public const int Composite_BeforeReflections = 11;
+            public const int Composite_BlendAO = 12;
+            public const int Composite_BlendCB = 13;
 
-            public const int Debug_ViewNormals = 12;
+            public const int Debug_ViewNormals = 14;
         }
 
         private static class ShaderProperties
@@ -742,7 +744,7 @@ namespace HorizonBasedAmbientOcclusion
             public static int deinterleavedAOTexelSize;
             public static int reinterleavedAOTexelSize;
             public static int uvToView;
-            public static int worldToCameraMatrix;
+            //public static int worldToCameraMatrix;
             public static int targetScale;
             public static int radius;
             public static int maxRadiusPixels;
@@ -782,11 +784,11 @@ namespace HorizonBasedAmbientOcclusion
                     aoSliceTex[i] = Shader.PropertyToID("_AOSliceTex" + i);
                 }
                 deinterleaveOffset = new int[] {
-                Shader.PropertyToID("_Deinterleave_Offset00"),
-                Shader.PropertyToID("_Deinterleave_Offset10"),
-                Shader.PropertyToID("_Deinterleave_Offset01"),
-                Shader.PropertyToID("_Deinterleave_Offset11")
-            };
+                    Shader.PropertyToID("_Deinterleave_Offset00"),
+                    Shader.PropertyToID("_Deinterleave_Offset10"),
+                    Shader.PropertyToID("_Deinterleave_Offset01"),
+                    Shader.PropertyToID("_Deinterleave_Offset11")
+                };
                 atlasOffset = Shader.PropertyToID("_AtlasOffset");
                 jitter = Shader.PropertyToID("_Jitter");
                 uvTransform = Shader.PropertyToID("_UVTransform");
@@ -795,7 +797,7 @@ namespace HorizonBasedAmbientOcclusion
                 deinterleavedAOTexelSize = Shader.PropertyToID("_DeinterleavedAO_TexelSize");
                 reinterleavedAOTexelSize = Shader.PropertyToID("_ReinterleavedAO_TexelSize");
                 uvToView = Shader.PropertyToID("_UVToView");
-                worldToCameraMatrix = Shader.PropertyToID("_WorldToCameraMatrix");
+                //worldToCameraMatrix = Shader.PropertyToID("_WorldToCameraMatrix");
                 targetScale = Shader.PropertyToID("_TargetScale");
                 radius = Shader.PropertyToID("_Radius");
                 maxRadiusPixels = Shader.PropertyToID("_MaxRadiusPixels");
@@ -823,41 +825,22 @@ namespace HorizonBasedAmbientOcclusion
                 return orthographic ? "ORTHOGRAPHIC_PROJECTION" : settings.pipelineStage != PipelineStage.BeforeImageEffectsOpaque ? "DEFERRED_SHADING" : "__";
             }
 
-            public static string GetDirectionsKeyword(GeneralSettings settings)
+            public static string GetQualityKeyword(GeneralSettings settings)
             {
                 switch (settings.quality)
                 {
                     case Quality.Lowest:
-                        return "DIRECTIONS_3";
+                        return "QUALITY_LOWEST";
                     case Quality.Low:
-                        return "DIRECTIONS_4";
+                        return "QUALITY_LOW";
                     case Quality.Medium:
-                        return "DIRECTIONS_6";
+                        return "QUALITY_MEDIUM";
                     case Quality.High:
-                        return "DIRECTIONS_8";
+                        return "QUALITY_HIGH";
                     case Quality.Highest:
-                        return "DIRECTIONS_8";
+                        return "QUALITY_HIGHEST";
                     default:
-                        return "DIRECTIONS_6";
-                }
-            }
-
-            public static string GetStepsKeyword(GeneralSettings settings)
-            {
-                switch (settings.quality)
-                {
-                    case Quality.Lowest:
-                        return "STEPS_2";
-                    case Quality.Low:
-                        return "STEPS_3";
-                    case Quality.Medium:
-                        return "STEPS_4";
-                    case Quality.High:
-                        return "STEPS_4";
-                    case Quality.Highest:
-                        return "STEPS_6";
-                    default:
-                        return "STEPS_4";
+                        return "QUALITY_MEDIUM";
                 }
             }
 
@@ -973,6 +956,12 @@ namespace HorizonBasedAmbientOcclusion
             }
         }
 
+        public enum StereoRenderingMode
+        {
+            MultiPass,
+            SinglePassInstanced
+        };
+
         private static class MersenneTwister
         {
             // Mersenne-Twister random numbers in [0,1).
@@ -994,9 +983,8 @@ namespace HorizonBasedAmbientOcclusion
         private int width { get; set; }
         private int height { get; set; }
         private bool stereoActive { get; set; }
-        private int numberOfEyes { get; set; }
         private int xrActiveEye { get; set; }
-        private XRSettings.StereoRenderingMode stereoRenderingMode { get; set; }
+        private StereoRenderingMode stereoRenderingMode { get; set; }
         private int screenWidth { get; set; }
         private int screenHeight { get; set; }
         private int aoWidth { get; set; }
@@ -1064,8 +1052,9 @@ namespace HorizonBasedAmbientOcclusion
             {
                 if (m_IsCommandBufferDirty || m_PreviousPipelineStage != generalSettings.pipelineStage || m_PreviousResolution != generalSettings.resolution ||
                     m_PreviousDebugMode != generalSettings.debugMode || m_PreviousAllowHDR != hbaoCamera.allowHDR || m_PreviousWidth != width || m_PreviousHeight != height ||
-                    m_PreviousDeinterleaving != generalSettings.deinterleaving || m_PreviousBlurAmount != blurSettings.type ||
-                    m_PreviousColorBleedingEnabled != colorBleedingSettings.enabled || m_PreviousTemporalFilterEnabled != temporalFilterSettings.enabled)
+                    m_PreviousDeinterleaving != generalSettings.deinterleaving || m_PreviousBlurAmount != blurSettings.type || m_PreviousUseMultibounce != aoSettings.useMultiBounce ||
+                    m_PreviousColorBleedingEnabled != colorBleedingSettings.enabled || m_PreviousTemporalFilterEnabled != temporalFilterSettings.enabled ||
+                    m_PreviousRenderingPath != hbaoCamera.actualRenderingPath)
                 {
                     m_PreviousPipelineStage = generalSettings.pipelineStage;
                     m_PreviousResolution = generalSettings.resolution;
@@ -1075,8 +1064,10 @@ namespace HorizonBasedAmbientOcclusion
                     m_PreviousHeight = height;
                     m_PreviousDeinterleaving = generalSettings.deinterleaving;
                     m_PreviousBlurAmount = blurSettings.type;
+                    m_PreviousUseMultibounce = aoSettings.useMultiBounce;
                     m_PreviousColorBleedingEnabled = colorBleedingSettings.enabled;
                     m_PreviousTemporalFilterEnabled = temporalFilterSettings.enabled;
+                    m_PreviousRenderingPath = hbaoCamera.actualRenderingPath;
 
                     return true;
                 }
@@ -1086,6 +1077,28 @@ namespace HorizonBasedAmbientOcclusion
             set
             {
                 m_IsCommandBufferDirty = value;
+            }
+        }
+
+        private bool isHistoryBufferDirty
+        {
+            get
+            {
+                if (aoHistoryBuffer == null || (colorBleedingSettings.enabled && colorBleedingHistoryBuffer == null) ||
+                    m_PreviousTemporalFilterEnabled != temporalFilterSettings.enabled ||
+                    m_PreviousResolution != generalSettings.resolution ||
+                    m_PreviousColorBleedingEnabled != colorBleedingSettings.enabled ||
+                    m_PrevStereoRenderingMode != stereoRenderingMode)
+                {
+                    m_PreviousTemporalFilterEnabled = temporalFilterSettings.enabled;
+                    m_PreviousResolution = generalSettings.resolution;
+                    m_PreviousColorBleedingEnabled = colorBleedingSettings.enabled;
+                    m_PrevStereoRenderingMode = stereoRenderingMode;
+
+                    return true;
+                }
+
+                return false;
             }
         }
 
@@ -1117,6 +1130,8 @@ namespace HorizonBasedAmbientOcclusion
 
         private RenderTextureDescriptor m_sourceDescriptor;
         private string[] m_ShaderKeywords;
+        private Vector4[] m_UVToViewPerEye = new Vector4[2];
+        private float[] m_RadiusPerEye = new float[2];
         private bool m_IsCommandBufferDirty;
         private Mesh m_FullscreenTriangle;
         private PipelineStage? m_PreviousPipelineStage;
@@ -1128,8 +1143,12 @@ namespace HorizonBasedAmbientOcclusion
         private int m_PreviousWidth;
         private int m_PreviousHeight;
         private bool m_PreviousAllowHDR;
+        private bool m_PreviousUseMultibounce;
         private bool m_PreviousColorBleedingEnabled;
         private bool m_PreviousTemporalFilterEnabled;
+        private RenderingPath m_PreviousRenderingPath;
+        private StereoRenderingMode m_PrevStereoRenderingMode;
+
 
         void OnEnable()
         {
@@ -1221,44 +1240,23 @@ namespace HorizonBasedAmbientOcclusion
 
         private void FetchRenderParameters()
         {
-#if !UNITY_SWITCH && ENABLE_VR
+#if !UNITY_SWITCH && ENABLE_VR_MODULE && ENABLE_VR
             if (hbaoCamera.stereoEnabled)
             {
                 var xrDesc = XRSettings.eyeTextureDesc;
-                stereoRenderingMode = XRSettings.StereoRenderingMode.SinglePass;
-                numberOfEyes = 1;
-
-                if (XRSettings.stereoRenderingMode == XRSettings.StereoRenderingMode.MultiPass)
-                    stereoRenderingMode = XRSettings.StereoRenderingMode.MultiPass;
+                stereoRenderingMode = StereoRenderingMode.MultiPass;
 
 #if UNITY_STANDALONE || UNITY_EDITOR || UNITY_PS4
                 if (xrDesc.dimension == TextureDimension.Tex2DArray)
-                    stereoRenderingMode = XRSettings.StereoRenderingMode.SinglePassInstanced;
+                    stereoRenderingMode = StereoRenderingMode.SinglePassInstanced;
 #endif
-
-                if (stereoRenderingMode == XRSettings.StereoRenderingMode.SinglePassInstanced)
-                    numberOfEyes = 2;
-
-                if (stereoRenderingMode == XRSettings.StereoRenderingMode.SinglePass)
-                {
-                    numberOfEyes = 2;
-                    //xrDesc.width /= 2;
-                    xrDesc.vrUsage = VRTextureUsage.None;
-                }
 
                 width = xrDesc.width;
                 height = xrDesc.height;
                 m_sourceDescriptor = xrDesc;
-
-                if (hbaoCamera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right)
-                    xrActiveEye = (int)Camera.StereoscopicEye.Right;
-
+                xrActiveEye = (int)hbaoCamera.stereoActiveEye;
                 screenWidth = XRSettings.eyeTextureWidth;
                 screenHeight = XRSettings.eyeTextureHeight;
-
-                if (stereoRenderingMode == XRSettings.StereoRenderingMode.SinglePass)
-                    screenWidth /= 2;
-
                 stereoActive = true;
             }
             else
@@ -1268,10 +1266,10 @@ namespace HorizonBasedAmbientOcclusion
                 height = hbaoCamera.pixelHeight;
                 m_sourceDescriptor.width = width;
                 m_sourceDescriptor.height = height;
+                xrActiveEye = 0;
                 screenWidth = width;
                 screenHeight = height;
                 stereoActive = false;
-                numberOfEyes = 1;
             }
 
             var downsamplingFactor = generalSettings.resolution == Resolution.Full ? 1 : generalSettings.deinterleaving == Deinterleaving.Disabled ? 2 : 1;
@@ -1376,17 +1374,17 @@ namespace HorizonBasedAmbientOcclusion
             for (int i = 0; i < 4; i++)
             {
                 var rtsDepth = new RenderTargetIdentifier[] {
-                ShaderProperties.depthSliceTex[(i << 2) + 0],
-                ShaderProperties.depthSliceTex[(i << 2) + 1],
-                ShaderProperties.depthSliceTex[(i << 2) + 2],
-                ShaderProperties.depthSliceTex[(i << 2) + 3]
-            };
+                    ShaderProperties.depthSliceTex[(i << 2) + 0],
+                    ShaderProperties.depthSliceTex[(i << 2) + 1],
+                    ShaderProperties.depthSliceTex[(i << 2) + 2],
+                    ShaderProperties.depthSliceTex[(i << 2) + 3]
+                };
                 var rtsNormals = new RenderTargetIdentifier[] {
-                ShaderProperties.normalsSliceTex[(i << 2) + 0],
-                ShaderProperties.normalsSliceTex[(i << 2) + 1],
-                ShaderProperties.normalsSliceTex[(i << 2) + 2],
-                ShaderProperties.normalsSliceTex[(i << 2) + 3]
-            };
+                    ShaderProperties.normalsSliceTex[(i << 2) + 0],
+                    ShaderProperties.normalsSliceTex[(i << 2) + 1],
+                    ShaderProperties.normalsSliceTex[(i << 2) + 2],
+                    ShaderProperties.normalsSliceTex[(i << 2) + 3]
+                };
 
                 int offsetX = (i & 1) << 1; int offsetY = (i >> 1) << 1;
                 cmd.SetGlobalVector(ShaderProperties.deinterleaveOffset[0], new Vector2(offsetX + 0, offsetY + 0));
@@ -1444,10 +1442,11 @@ namespace HorizonBasedAmbientOcclusion
 
         private void TemporalFilter(CommandBuffer cmd)
         {
-            if (temporalFilterSettings.enabled && !renderingInSceneView)
-            {
+            if (isHistoryBufferDirty && temporalFilterSettings.enabled)
                 AllocateHistoryBuffers();
 
+            if (temporalFilterSettings.enabled && !renderingInSceneView)
+            {
                 if (colorBleedingSettings.enabled)
                 {
                     // For Color Bleeding we have 2 history buffers to fill so there are 2 render targets.
@@ -1491,7 +1490,7 @@ namespace HorizonBasedAmbientOcclusion
                     CompositeBeforeImageEffectsOpaque(cmd);
             }
             else // debug mode
-                CompositeBeforeImageEffectsOpaque(cmd, generalSettings.debugMode == DebugMode.ViewNormals ? Pass.Debug_ViewNormals : Pass.Composite);
+                CompositeDebug(cmd, generalSettings.debugMode == DebugMode.ViewNormals ? Pass.Debug_ViewNormals : Pass.Composite);
         }
 
         // Cases of BeforeReflections & AfterLighting
@@ -1528,11 +1527,33 @@ namespace HorizonBasedAmbientOcclusion
             ReleaseTemporaryRT(cmd, ShaderProperties.tempTex);
         }
 
-        private void CompositeBeforeImageEffectsOpaque(CommandBuffer cmd, int finalPassId = Pass.Composite)
+        private void CompositeBeforeImageEffectsOpaque(CommandBuffer cmd)
         {
-            // This pass can be used to display all debug mode as well
+            if (aoSettings.useMultiBounce)
+            {
+                GetScreenSpaceTemporaryRT(cmd, ShaderProperties.tempTex, colorFormat: sourceFormat);
+                if (stereoActive && hbaoCamera.actualRenderingPath != RenderingPath.DeferredShading)
+                    cmd.Blit(BuiltinRenderTextureType.CameraTarget, ShaderProperties.tempTex);
+                else
+                    BlitFullscreenTriangle(cmd, BuiltinRenderTextureType.CameraTarget, ShaderProperties.tempTex, material, Pass.Copy);
+            }
+
+            ApplyFlip(cmd, SystemInfo.graphicsUVStartsAtTop);
+            BlitFullscreenTriangle(cmd, aoSettings.useMultiBounce ? (RenderTargetIdentifier)ShaderProperties.tempTex : BuiltinRenderTextureType.None, BuiltinRenderTextureType.CameraTarget, material, Pass.Composite_BlendAO);
+            if (colorBleedingSettings.enabled)
+                BlitFullscreenTriangle(cmd, BuiltinRenderTextureType.None, BuiltinRenderTextureType.CameraTarget, material, Pass.Composite_BlendCB);
+
+            if (aoSettings.useMultiBounce)
+                ReleaseTemporaryRT(cmd, ShaderProperties.tempTex);
+        }
+
+        private void CompositeDebug(CommandBuffer cmd, int finalPassId = Pass.Composite)
+        {
             GetScreenSpaceTemporaryRT(cmd, ShaderProperties.tempTex, colorFormat: sourceFormat);
-            BlitFullscreenTriangle(cmd, BuiltinRenderTextureType.CameraTarget, ShaderProperties.tempTex, material, Pass.Copy);
+            if (stereoActive && hbaoCamera.actualRenderingPath != RenderingPath.DeferredShading)
+                cmd.Blit(BuiltinRenderTextureType.CameraTarget, ShaderProperties.tempTex);
+            else
+                BlitFullscreenTriangle(cmd, BuiltinRenderTextureType.CameraTarget, ShaderProperties.tempTex, material, Pass.Copy);
             ApplyFlip(cmd, SystemInfo.graphicsUVStartsAtTop);
             BlitFullscreenTriangle(cmd, ShaderProperties.tempTex, BuiltinRenderTextureType.CameraTarget, material, finalPassId);
             ReleaseTemporaryRT(cmd, ShaderProperties.tempTex);
@@ -1540,10 +1561,20 @@ namespace HorizonBasedAmbientOcclusion
 
         private void UpdateMaterialProperties()
         {
-            float tanHalfFovY = Mathf.Tan(0.5f * hbaoCamera.fieldOfView * Mathf.Deg2Rad);
-            float invFocalLenX = 1.0f / (1.0f / tanHalfFovY * (screenHeight / (float)screenWidth));
-            float invFocalLenY = 1.0f / (1.0f / tanHalfFovY);
-            float maxRadInPixels = Mathf.Max(16, aoSettings.maxRadiusPixels * Mathf.Sqrt((screenWidth * numberOfEyes * screenHeight) / (1080.0f * 1920.0f)));
+            int eyeCount = stereoActive && stereoRenderingMode == StereoRenderingMode.SinglePassInstanced && !renderingInSceneView ? 2 : 1;
+            for (int viewIndex = 0; viewIndex < eyeCount; viewIndex++)
+            {
+                var projMatrix = viewIndex == 0 ? hbaoCamera.projectionMatrix : hbaoCamera.GetStereoProjectionMatrix(Camera.StereoscopicEye.Right);
+                float invTanHalfFOVxAR = projMatrix.m00; // m00 => 1.0f / (tanHalfFOV * aspectRatio)
+                float invTanHalfFOV    = projMatrix.m11; // m11 => 1.0f / tanHalfFOV
+                m_UVToViewPerEye[viewIndex == 0 ? xrActiveEye : viewIndex] = new Vector4(2.0f / invTanHalfFOVxAR, -2.0f / invTanHalfFOV, -1.0f / invTanHalfFOVxAR, 1.0f / invTanHalfFOV);
+                m_RadiusPerEye[viewIndex == 0 ? xrActiveEye : viewIndex] = aoSettings.radius * 0.5f * (screenHeight / (generalSettings.deinterleaving == Deinterleaving.x4 ? 4 : 1) / (2.0f / invTanHalfFOV));
+            }
+
+            //float tanHalfFovY = Mathf.Tan(0.5f * hbaoCamera.fieldOfView * Mathf.Deg2Rad);
+            //float invFocalLenX = 1.0f / (1.0f / tanHalfFovY * (screenHeight / (float)screenWidth));
+            //float invFocalLenY = 1.0f / (1.0f / tanHalfFovY);
+            float maxRadInPixels = Mathf.Max(16, aoSettings.maxRadiusPixels * Mathf.Sqrt((screenWidth * screenHeight) / (1080.0f * 1920.0f)));
             maxRadInPixels /= (generalSettings.deinterleaving == Deinterleaving.x4 ? 4 : 1);
 
             var targetScale = generalSettings.deinterleaving == Deinterleaving.x4 ?
@@ -1558,9 +1589,12 @@ namespace HorizonBasedAmbientOcclusion
             material.SetVector(ShaderProperties.deinterleavedAOTexelSize, new Vector4(1.0f / deinterleavedAoWidth, 1.0f / deinterleavedAoHeight, deinterleavedAoWidth, deinterleavedAoHeight));
             material.SetVector(ShaderProperties.reinterleavedAOTexelSize, new Vector4(1f / reinterleavedAoWidth, 1f / reinterleavedAoHeight, reinterleavedAoWidth, reinterleavedAoHeight));
             material.SetVector(ShaderProperties.targetScale, targetScale);
-            material.SetVector(ShaderProperties.uvToView, new Vector4(2.0f * invFocalLenX, -2.0f * invFocalLenY, -1.0f * invFocalLenX, 1.0f * invFocalLenY));
-            material.SetMatrix(ShaderProperties.worldToCameraMatrix, hbaoCamera.worldToCameraMatrix);
-            material.SetFloat(ShaderProperties.radius, aoSettings.radius * 0.5f * ((screenHeight / (generalSettings.deinterleaving == Deinterleaving.x4 ? 4 : 1)) / (tanHalfFovY * 2.0f)));
+            //material.SetVector(ShaderProperties.uvToView, new Vector4(2.0f * invFocalLenX, -2.0f * invFocalLenY, -1.0f * invFocalLenX, 1.0f * invFocalLenY));
+            material.SetVectorArray(ShaderProperties.uvToView, m_UVToViewPerEye);
+            //material.SetMatrix(ShaderProperties.worldToCameraMatrix, hbaoCamera.worldToCameraMatrix);
+            //material.SetFloat(ShaderProperties.radius, aoSettings.radius * 0.5f * ((screenHeight / (generalSettings.deinterleaving == Deinterleaving.x4 ? 4 : 1)) / (tanHalfFovY * 2.0f)));
+            //material.SetFloat(ShaderProperties.radius, aoSettings.radius * 0.5f * ((screenHeight / (generalSettings.deinterleaving == Deinterleaving.x4 ? 4 : 1)) / (invFocalLenY * 2.0f)));
+            material.SetFloatArray(ShaderProperties.radius, m_RadiusPerEye);
             material.SetFloat(ShaderProperties.maxRadiusPixels, maxRadInPixels);
             material.SetFloat(ShaderProperties.negInvRadius2, -1.0f / (aoSettings.radius * aoSettings.radius));
             material.SetFloat(ShaderProperties.angleBias, aoSettings.bias);
@@ -1581,21 +1615,20 @@ namespace HorizonBasedAmbientOcclusion
 
         private void UpdateShaderKeywords()
         {
-            if (m_ShaderKeywords == null || m_ShaderKeywords.Length != 13) m_ShaderKeywords = new string[13];
+            if (m_ShaderKeywords == null || m_ShaderKeywords.Length != 12) m_ShaderKeywords = new string[12];
 
             m_ShaderKeywords[0] = ShaderProperties.GetOrthographicOrDeferredKeyword(hbaoCamera.orthographic, generalSettings);
-            m_ShaderKeywords[1] = ShaderProperties.GetDirectionsKeyword(generalSettings);
-            m_ShaderKeywords[2] = ShaderProperties.GetStepsKeyword(generalSettings);
-            m_ShaderKeywords[3] = ShaderProperties.GetNoiseKeyword(generalSettings);
-            m_ShaderKeywords[4] = ShaderProperties.GetDeinterleavingKeyword(generalSettings);
-            m_ShaderKeywords[5] = ShaderProperties.GetDebugKeyword(generalSettings);
-            m_ShaderKeywords[6] = ShaderProperties.GetMultibounceKeyword(aoSettings);
-            m_ShaderKeywords[7] = ShaderProperties.GetOffscreenSamplesContributionKeyword(aoSettings);
-            m_ShaderKeywords[8] = ShaderProperties.GetPerPixelNormalsKeyword(aoSettings);
-            m_ShaderKeywords[9] = ShaderProperties.GetBlurRadiusKeyword(blurSettings);
-            m_ShaderKeywords[10] = ShaderProperties.GetVarianceClippingKeyword(temporalFilterSettings);
-            m_ShaderKeywords[11] = ShaderProperties.GetColorBleedingKeyword(colorBleedingSettings);
-            m_ShaderKeywords[12] = ShaderProperties.GetLightingLogEncodedKeyword(hbaoCamera.allowHDR);
+            m_ShaderKeywords[1] = ShaderProperties.GetQualityKeyword(generalSettings);
+            m_ShaderKeywords[2] = ShaderProperties.GetNoiseKeyword(generalSettings);
+            m_ShaderKeywords[3] = ShaderProperties.GetDeinterleavingKeyword(generalSettings);
+            m_ShaderKeywords[4] = ShaderProperties.GetDebugKeyword(generalSettings);
+            m_ShaderKeywords[5] = ShaderProperties.GetMultibounceKeyword(aoSettings);
+            m_ShaderKeywords[6] = ShaderProperties.GetOffscreenSamplesContributionKeyword(aoSettings);
+            m_ShaderKeywords[7] = ShaderProperties.GetPerPixelNormalsKeyword(aoSettings);
+            m_ShaderKeywords[8] = ShaderProperties.GetBlurRadiusKeyword(blurSettings);
+            m_ShaderKeywords[9] = ShaderProperties.GetVarianceClippingKeyword(temporalFilterSettings);
+            m_ShaderKeywords[10] = ShaderProperties.GetColorBleedingKeyword(colorBleedingSettings);
+            m_ShaderKeywords[11] = ShaderProperties.GetLightingLogEncodedKeyword(hbaoCamera.allowHDR);
 
             material.shaderKeywords = m_ShaderKeywords;
         }
@@ -1621,6 +1654,9 @@ namespace HorizonBasedAmbientOcclusion
 
             if (generalSettings.pipelineStage != PipelineStage.BeforeImageEffectsOpaque && aoSettings.perPixelNormals == PerPixelNormals.Camera)
                 SetAoPerPixelNormals(PerPixelNormals.GBuffer);
+
+            if (stereoActive && hbaoCamera.actualRenderingPath != RenderingPath.DeferredShading && aoSettings.perPixelNormals != PerPixelNormals.Reconstruct)
+                SetAoPerPixelNormals(PerPixelNormals.Reconstruct);
 
             if (temporalFilterSettings.enabled && !motionVectorsSupported)
                 EnableTemporalFilter(false);
@@ -1679,10 +1715,6 @@ namespace HorizonBasedAmbientOcclusion
             if (heightOverride > 0)
                 desc.height = heightOverride;
 
-            //intermediates in VR are unchanged
-            if (stereoActive && desc.dimension == TextureDimension.Tex2DArray)
-                desc.dimension = TextureDimension.Tex2D;
-
             var rt = new RenderTexture(desc);
             rt.filterMode = filter;
             return rt;
@@ -1698,10 +1730,6 @@ namespace HorizonBasedAmbientOcclusion
             if (heightOverride > 0)
                 desc.height = heightOverride;
 
-            //intermediates in VR are unchanged
-            if (stereoActive && desc.dimension == TextureDimension.Tex2DArray)
-                desc.dimension = TextureDimension.Tex2D;
-
             cmd.GetTemporaryRT(nameID, desc, filter);
         }
 
@@ -1713,21 +1741,21 @@ namespace HorizonBasedAmbientOcclusion
         private void BlitFullscreenTriangle(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier destination, Material material, int pass = 0)
         {
             cmd.SetGlobalTexture(ShaderProperties.mainTex, source);
-            cmd.SetRenderTarget(destination);
+            cmd.SetRenderTarget(destination, 0, CubemapFace.Unknown, -1);
             cmd.DrawMesh(fullscreenTriangle, Matrix4x4.identity, material, 0, pass);
         }
 
         private void BlitFullscreenTriangle(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier[] destinations, Material material, int pass = 0)
         {
             cmd.SetGlobalTexture(ShaderProperties.mainTex, source);
-            cmd.SetRenderTarget(destinations, destinations[0]);
+            cmd.SetRenderTarget(destinations, destinations[0], 0, CubemapFace.Unknown, -1);
             cmd.DrawMesh(fullscreenTriangle, Matrix4x4.identity, material, 0, pass);
         }
 
         private void BlitFullscreenTriangleWithClear(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier destination, Material material, Color clearColor, int pass = 0)
         {
             cmd.SetGlobalTexture(ShaderProperties.mainTex, source);
-            cmd.SetRenderTarget(destination);
+            cmd.SetRenderTarget(destination, 0, CubemapFace.Unknown, -1);
             cmd.ClearRenderTarget(false, true, clearColor);
             cmd.DrawMesh(fullscreenTriangle, Matrix4x4.identity, material, 0, pass);
         }

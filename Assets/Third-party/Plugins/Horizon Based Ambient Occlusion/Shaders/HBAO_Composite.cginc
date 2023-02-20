@@ -31,6 +31,8 @@ inline half3 MultiBounceAO(float visibility, half3 albedo) {
 
 half4 Composite_Frag(Varyings input) : SV_Target
 {
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
     //uint2 positionSS = input.uv * _ScreenSize.xy;
 
     half4 ao = FetchOcclusion(input.uv);
@@ -81,6 +83,33 @@ half4 Composite_Frag(Varyings input) : SV_Target
     return col;
 }
 
+half4 Composite_Frag_BlendAO(Varyings input) : SV_Target
+{
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
+    half4 ao = FetchOcclusion(input.uv);
+
+    ao.a = saturate(pow(abs(ao.a), _Intensity));
+    half3 aoColor = lerp(_BaseColor.rgb, half3(1.0, 1.0, 1.0), ao.a);
+
+    #if MULTIBOUNCE
+    half4 col = FetchSceneColor(input.uv);
+    aoColor = lerp(aoColor, MultiBounceAO(ao.a, lerp(col.rgb, _BaseColor.rgb, _BaseColor.rgb)), _MultiBounceInfluence);
+    #endif
+
+    return float4(aoColor, 1);
+}
+
+half4 Composite_Frag_BlendCB(Varyings input) : SV_Target
+{
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
+    half4 ao = FetchOcclusion(input.uv);
+
+    return float4(ao.rgb, 1);
+}
+
+
 struct CombinedOutput {
     half4 gbuffer0 : SV_Target0;	// albedo (RGB), occlusion (A)
     half4 gbuffer3 : SV_Target1;	// emission (RGB), unused(A)
@@ -88,6 +117,8 @@ struct CombinedOutput {
 
 CombinedOutput Composite_Lit_Frag(Varyings input)
 {
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
     half4 ao = FetchOcclusion(input.uv);
 
     ao.a = saturate(pow(abs(ao.a), _Intensity));

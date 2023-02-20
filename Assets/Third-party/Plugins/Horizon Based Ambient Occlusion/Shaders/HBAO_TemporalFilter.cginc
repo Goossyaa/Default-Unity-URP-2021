@@ -114,6 +114,8 @@ inline CTYPE VarianceClipping(float2 uv, CTYPE ao, CTYPE aom1, float velocityWei
 
 HistoryOutput TemporalFilter_Frag(Varyings input)
 {
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
     // fetch current frame data
     CTYPE ao; float2 depth;
     FetchAoAndDepth(input.uv, ao, depth);

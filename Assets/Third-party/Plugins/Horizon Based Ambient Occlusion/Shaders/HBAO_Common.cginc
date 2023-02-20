@@ -21,8 +21,13 @@ inline float LinearizeDepth(float depth) {
 }
 
 inline float3 FetchViewPos(float2 uv) {
+    uv = clamp(uv, 0, 1 - _Input_TexelSize.xy * 0.5); // uv guard
     float depth = LinearizeDepth(FetchRawDepth(uv));
-    return float3((uv * _UVToView.xy + _UVToView.zw) * depth, depth);
+#if ORTHOGRAPHIC_PROJECTION
+    return float3((uv * _UVToView[unity_StereoEyeIndex].xy + _UVToView[unity_StereoEyeIndex].zw), depth);
+#else
+    return float3((uv * _UVToView[unity_StereoEyeIndex].xy + _UVToView[unity_StereoEyeIndex].zw) * depth, depth);
+#endif
 }
 
 inline float3 MinDiff(float3 P, float3 Pr, float3 Pl) {
@@ -44,7 +49,8 @@ inline float3 FetchViewNormals(float2 uv, float2 delta, float3 P) {
     float3 N = DecodeViewNormalStereo(UNITY_SAMPLE_SCREENSPACE_TEXTURE(_CameraDepthNormalsTexture, uv * _TargetScale.xy));
     #else
     float3 N = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_CameraGBufferTexture2, uv * _TargetScale.xy).rgb * 2.0 - 1.0;
-    N = mul((float3x3)_WorldToCameraMatrix, N);
+    //N = mul((float3x3)_WorldToCameraMatrix, N);
+    N = mul((float3x3)UNITY_MATRIX_V, N);
     #endif // NORMALS_CAMERA
     N = float3(N.x, -N.yz);
     #endif // NORMALS_RECONSTRUCT

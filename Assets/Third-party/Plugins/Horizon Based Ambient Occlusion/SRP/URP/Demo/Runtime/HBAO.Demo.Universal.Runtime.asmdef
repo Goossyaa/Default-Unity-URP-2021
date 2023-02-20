@@ -1,5 +1,6 @@
 {
     "name": "HBAO.Demo.Universal.Runtime",
+    "rootNamespace": "",
     "references": [
         "GUID:09d385cb911270749b709e1bb48e9ea1",
         "GUID:df380645f10b7bc4b97d4f5eb6303d95"
@@ -10,9 +11,7 @@
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": [
-        "UNITY_2019_3_OR_NEWER"
-    ],
+    "defineConstraints": [],
     "versionDefines": [],
     "noEngineReferences": false
 }

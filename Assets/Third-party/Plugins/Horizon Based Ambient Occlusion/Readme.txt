@@ -55,6 +55,69 @@ For any support request, please drop me an email at jimmikaelkael@gmail.com
 Changelog
 -----------------------------------------------------------------------------
 
+3.5
+  - Standard pipeline: added VR SPI support
+  - Standard pipeline: fix compile error when built-in VR module is disabled
+  - Reduced number of shader variants (all pipelines)
+  - URP/HDRP: fixed VR SPI projection issue
+  - HDRP: fixed issue with R16G16B16A16 and R32G32B32A32 buffer formats
+
+3.4.12
+  - Standard pipeline: fixed composite bug with MSAA and transparent objects
+  - HDRP: fix doubled properties in 2022.2
+
+3.4.11
+  - Fixed bleeding occlusion on screen edges
+
+3.4.10
+  - Fixed bug with orthographic projection
+  - Reduced number of shader variants
+  - URP: fixed wrong camera view normals on URP versions 10 and 11
+
+3.4.9
+  - HDRP: fixed AO shifting issue
+
+3.4.8
+  - HDRP: fixed VR SPI
+  - URP: prevent color bleeding to be used along with LitAO mode
+  - URP: warn about 2021.2+ required for motion vectors (temporal filter)
+
+3.4.7
+  - Fixed temporal filter issues on URP (use BufferedRTHandleSystem)
+  - Fixed obsolete hasAdvancedMode field on HDRP
+  - Added min/max range for multibounce setting on HDRP
+
+3.4.6
+  - Fixed temporal filtering ghosting issue on URP
+
+3.4.5
+  - Added rendering path option in URP to fix issues with LitAO+Deferred
+  - Fixed scene rendered black in URP12 with LitAO and opaque texture enabled
+
+3.4.4
+  - Fixed temporal filtering issue when using camera normals on URP
+
+3.4.3
+  - Fixed wrong camera view normals on URP
+
+3.4.2
+  - Enable temporal filtering on URP (URP12+, Unity 2021.2+)
+
+3.4.1
+  - Fixed Deinterleaving per frame GC allocation on URP
+
+3.4
+  - Added LitAO on URP (requires URP 10.0.0 or newer)
+
+3.3.4
+  - Fixed VR Single Pass on URP
+
+3.3.3
+  - Fixed VR on Standard Render Pipeline
+
+3.3.2
+  - Added support for URP 12.0.0
+
 3.3.1
   - Added support for upcoming URP 10.0.0 (support view normals)
 

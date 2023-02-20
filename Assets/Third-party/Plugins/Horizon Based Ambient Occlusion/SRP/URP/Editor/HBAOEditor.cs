@@ -20,7 +20,7 @@ namespace HorizonBasedAmbientOcclusion.Universal
         private PropertyFetcher<HBAO> m_PropertyFetcher;
 
         // settings group <setting, property reference>
-        private Dictionary<HBAO.SettingsGroup, List<MemberInfo>> m_GroupFields = new Dictionary<HBAO.SettingsGroup, List<MemberInfo>>();
+        private Dictionary<HBAO.SettingsGroup, List<MemberInfo>> m_GroupFields;
         private readonly Dictionary<int, HBAO.Preset> m_Presets = new Dictionary<int, HBAO.Preset>()
         {
             { 0, HBAO.Preset.Normal },
@@ -31,7 +31,11 @@ namespace HorizonBasedAmbientOcclusion.Universal
             { 5, HBAO.Preset.HighestQuality }
         };
 
+#if UNITY_2021_2_OR_NEWER
+        public override bool hasAdditionalProperties => false;
+#else
         public override bool hasAdvancedMode => false;
+#endif
 
         public override void OnEnable()
         {
@@ -42,7 +46,7 @@ namespace HorizonBasedAmbientOcclusion.Universal
 
             //var o = new PropertyFetcher<HBAO>(serializedObject);
             m_PropertyFetcher = new PropertyFetcher<HBAO>(serializedObject);
-
+            m_GroupFields = new Dictionary<HBAO.SettingsGroup, List<MemberInfo>>();
 
             var settings = m_HBAO.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                             .Where(t => t.FieldType.IsSubclassOf(typeof(VolumeParameter)))
@@ -123,6 +127,19 @@ namespace HorizonBasedAmbientOcclusion.Universal
 
                     foreach (var field in group.Value)
                     {
+                        // warn about URP10+ required when mode is LitAO
+                        if (group.Key.GetType() == typeof(HBAO.GeneralSettings) && field.Name == "renderingPath")
+                        {
+#if UNITY_2021_2_OR_NEWER
+                            if (m_HBAO.mode.overrideState && m_HBAO.mode.value != HBAO.Mode.LitAO)
+                            {
+                                continue; // hides rendering path settings when not LitAO
+                            }
+#else
+                            continue; // hides rendering path before URP12
+#endif
+                        }
+
                         // hide resolution when deinterleaved HBAO is on
                         if (group.Key.GetType() == typeof(HBAO.GeneralSettings) && field.Name == "resolution")
                         {
@@ -131,16 +148,6 @@ namespace HorizonBasedAmbientOcclusion.Universal
                                 continue;
                             }
                         }
-                        // warn about deinterleaving not supported with SPSR
-                        /*else if (group.Key.GetType() == typeof(HBAO.GeneralSettings) && field.Name == "debugMode")
-                        {
-                            if (m_HBAO.GetDeinterleaving() != HBAO.Deinterleaving.Disabled &&
-                                IsVrRunning() && PlayerSettings.stereoRenderingPath == StereoRenderingPath.SinglePass)
-                            {
-                                GUILayout.Space(6.0f);
-                                EditorGUILayout.HelpBox("Deinterleaving is not supported with Single Pass Stereo Rendering...", MessageType.Warning);
-                            }
-                        }*/
                         // hide noise type when deinterleaved HBAO is on
                         else if (group.Key.GetType() == typeof(HBAO.GeneralSettings) && field.Name == "noiseType")
                         {
@@ -158,10 +165,27 @@ namespace HorizonBasedAmbientOcclusion.Universal
                                 EditorGUILayout.HelpBox("The effect is disabled by default, you need to override intensity value in order to enable HBAO.", MessageType.Warning);
                             }
                         }
-                        // hide multiBounceInfluence setting when not used
+                        // hide useMultiBounce setting when mode is LitAO
+                        else if (group.Key.GetType() == typeof(HBAO.AOSettings) && field.Name == "useMultiBounce")
+                        {
+                            if (m_HBAO.mode.overrideState && m_HBAO.mode.value == HBAO.Mode.LitAO)
+                            {
+                                continue;
+                            }
+                        }
+                        // hide multiBounceInfluence setting when not used or when mode is LitAO
                         else if (group.Key.GetType() == typeof(HBAO.AOSettings) && field.Name == "multiBounceInfluence")
                         {
-                            if (!m_HBAO.useMultiBounce.overrideState || !m_HBAO.UseMultiBounce())
+                            if (!m_HBAO.useMultiBounce.overrideState || !m_HBAO.UseMultiBounce() ||
+                                (m_HBAO.mode.overrideState && m_HBAO.mode.value == HBAO.Mode.LitAO))
+                            {
+                                continue;
+                            }
+                        }
+                        // hide directLightingStrength setting when mode is normal
+                        else if (group.Key.GetType() == typeof(HBAO.AOSettings) && field.Name == "directLightingStrength")
+                        {
+                            if (!m_HBAO.mode.overrideState || m_HBAO.mode.value == HBAO.Mode.Normal)
                             {
                                 continue;
                             }
@@ -172,25 +196,53 @@ namespace HorizonBasedAmbientOcclusion.Universal
                             if ((m_HBAO.distanceFalloff.overrideState || m_HBAO.maxDistance.overrideState) && m_HBAO.GetAoDistanceFalloff() > m_HBAO.GetAoMaxDistance())
                             {
                                 GUILayout.Space(6.0f);
-                                EditorGUILayout.HelpBox("Distance Falloff shoudn't be superior to Max Distance", MessageType.Warning);
+                                EditorGUILayout.HelpBox("Distance Falloff shoudn't be greater than Max Distance.", MessageType.Warning);
                             }
                         }
-                        // warn about distance falloff greater than max distance
-                        /*else if (group.Key.GetType() == typeof(HBAO.AOSettings) && field.Name == "baseColor")
-                        {
-                            if (m_HBAO.perPixelNormals.overrideState && m_HBAO.GetAoPerPixelNormals() == HBAO.PerPixelNormals.Camera)
-                            {
-                                GUILayout.Space(6.0f);
-                                EditorGUILayout.HelpBox("Currently Universal Render Pipeline does not generate camera normals, awaiting support...", MessageType.Warning);
-                            }
-                        }*/
+                        // warn about motion vectors not supported
                         else if (group.Key.GetType() == typeof(HBAO.TemporalFilterSettings) && field.Name == "temporalFilterEnabled")
                         {
-                            GUILayout.Space(6.0f);
-                            EditorGUILayout.HelpBox("Currently Universal Render Pipeline does not generate motion vectors, awaiting support...", MessageType.Warning);
+                            // For platforms not supporting motion vectors texture
+                            // https://docs.unity3d.com/ScriptReference/DepthTextureMode.MotionVectors.html
+                            if (!SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.RGHalf))
+                            {
+                                GUILayout.Space(6.0f);
+                                EditorGUILayout.HelpBox("Motion vectors not supported on this platform...", MessageType.Warning);
 
-                            if (m_HBAO.IsTemporalFilterEnabled())
-                                m_HBAO.EnableTemporalFilter(false);
+                                if (m_HBAO.IsTemporalFilterEnabled())
+                                    m_HBAO.EnableTemporalFilter(false);
+                            }
+                            else
+                            {
+#if !UNITY_2021_2_OR_NEWER
+                                GUILayout.Space(6.0f);
+                                EditorGUILayout.HelpBox("Requires proper motion vectors support available in 2021.2+", MessageType.Warning);
+
+                                if (m_HBAO.IsTemporalFilterEnabled())
+                                    m_HBAO.EnableTemporalFilter(false);
+#else
+                                if (IsVrRunning())
+                                {
+                                    GUILayout.Space(6.0f);
+                                    EditorGUILayout.HelpBox("Not supported yet in VR...", MessageType.Warning);
+
+                                    if (m_HBAO.IsTemporalFilterEnabled())
+                                        m_HBAO.EnableTemporalFilter(false);
+                                }
+#endif
+                            }
+                        }
+                        // warn about color bleeding not supported when doing LitAO
+                        else if (group.Key.GetType() == typeof(HBAO.ColorBleedingSettings) && field.Name == "colorBleedingEnabled")
+                        {
+                            if (m_HBAO.mode.overrideState && m_HBAO.mode.value == HBAO.Mode.LitAO)
+                            {
+                                GUILayout.Space(6.0f);
+                                EditorGUILayout.HelpBox("Color bleeding can't be used in LitAO mode as AO is being injected into the lighting.", MessageType.Warning);
+
+                                if (m_HBAO.IsColorBleedingEnabled())
+                                    m_HBAO.EnableColorBleeding(false);
+                            }
                         }
 
                         var parameter = Unpack(m_PropertyFetcher.Find(field.Name));
@@ -232,7 +284,6 @@ namespace HorizonBasedAmbientOcclusion.Universal
             m_SettingsGroupStyle.contentOffset = new Vector2(10f, -2f);
         }
 
-        List<UnityEngine.XR.XRDisplaySubsystemDescriptor> displaysDescs = new List<UnityEngine.XR.XRDisplaySubsystemDescriptor>();
         List<UnityEngine.XR.XRDisplaySubsystem> displays = new List<UnityEngine.XR.XRDisplaySubsystem>();
 
         private bool IsVrRunning()

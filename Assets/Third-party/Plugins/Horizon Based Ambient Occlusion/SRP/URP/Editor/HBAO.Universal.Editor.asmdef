@@ -1,5 +1,6 @@
 {
     "name": "HBAO.Universal.Editor",
+    "rootNamespace": "",
     "references": [
         "GUID:09d385cb911270749b709e1bb48e9ea1",
         "GUID:df380645f10b7bc4b97d4f5eb6303d95",

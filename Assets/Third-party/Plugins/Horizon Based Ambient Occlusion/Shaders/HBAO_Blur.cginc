@@ -131,6 +131,8 @@ inline float4 ComputeBlur(float2 uv0, float2 deltaUV) {
 
 float4 Blur_Frag(Varyings input) : SV_Target
 {
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
     return ComputeBlur(input.uv, _BlurDeltaUV);
 }
 

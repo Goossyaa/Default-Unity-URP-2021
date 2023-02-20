@@ -1,115 +1,115 @@
-# Default-Unity-URP
-Unity 2020.3.43f1
+# Default Unity URP 2021
+Unity 2021.3.19f1
+  
+# Assets list
+## Unity
+2D Animations - 7.0.9  
+2D Sprite - 1.0.0  
+Animation Rigging - 1.1.1  
+Burst - 1.8.2  
+Localization - 1.3.2  
+Mathematics - 1.2.6  
+Cinemachine - 2.8.9  
+Post Processing - 3.2.2  
+Recorder - 3.0.3  
+Shader Graph - 12.1.10  
+TextMesh Pro - 3.0.6  
+Timeline - 1.6.4  
+Universal RP - 12.1.10  
+Visual Effect Graph - 12.1.10  
+Visual Scripting - 1.8.0  
+  
+## Third-party
+### Plugins
+Amplify Shader Editor - v1.9.1  
+Amplify Shader Pack - v1.0.3  
+Beautify 3 - v15.5  
+DOTween Pro - v1.0.310  
+Feel - v3.5  
+FMOD  
+Rewired - v1.1.41.5  
+UModeler - v2.9.20  
+All Settings Pro - v1.0.5  
 
-# [0.1.10] — 2023-01-06
+### Editor
+Build Report - v3.4.14  
+ConsolePro  
+Grabbit - v2021.0.8  
+Hierarchy 2  
+Hierarchy Pro - Extended v2022.1.4  
+Shader Control - v6.2.1  
+SuperPivot  
+  
+# Project structure
+```
+Assets
+|---Art
+|	|---Animations		Animationa and animators
+|	|---Fonts		Fonts converted by TextMesh Pro 
+|	|---Materials
+|	|---Models		FBX and BLEND files
+|	|---Textures		PNG files
+|	|---VFX			VFX graph files
+|
+|---Audio
+|	|---Music
+|	|---Sounds
+|
+|---Code
+| 	|---Scripts		C# scripts
+| 	|---Shaders 		Shader files and shader graphs
+|
+|---Level 			Anything related to game design in Unity
+| 	|---Prefabs
+| 	|---Scenes
+|
+|---Resource			Some Assets store their settings here. For example DOTween
+|
+|---Settings			User settings and configuration files
+| 	|---PostProcessing
+| 	|---Presets
+| 	|---Quality
+| 	|---Renderer
+| 	|---ShaderVariants
+|
+|---Third-party			Third-party content from the Asset Store
+| 	|---Content		Any art-related asset with its own structure that does not bring additional functionality
+| 	|---Editor		Any editor extensions that should not affect the build
+| 	|---Plugins		Other third-party assets that bring new functionality to the build
+|
+|---zzzTrash			Files to be assigned or deleted
 
-### Добавлено
-1. DOTweenPro
-2. Horizon Based Ambient Occlusion
-
-
-# [0.1.9] — 2023-01-05
-
-### Добавлено
-1. Feel
-2. Bolt
-3. FMOD
-4. I2 Localization
-5. Lux URP Essentials
-
-### Исправлено
-Изменил настройки Input System на Both
-
-### Удалено 
-Папка Assets/Third-party/Editor/Grabbit/Demo
-
-
-
-
-# [0.1.8] — 2023-01-05
-
-Добавил ShaderControl
-
-
-# [0.1.7] — 2023-01-05
-
-Перенес Grabbit в Assets/Third-party/Editor
-
-
-
-# [0.1.6] — 2023-01-05
-
-Добавил Beautify 3
-
-
-# [0.1.5] — 2023-01-05
-
-Добавил Grabbit
-
-
-# [0.1.4] — 2023-01-05
-
-### Добавлено
-1. 2D Animations
-2. Cinemachine
-3. Input System (New)
-4. Post Processing
-5. ProBuilder
-6. Unity Recorder
-7. Visual Effect Graph
-
-
-
-# [0.1.3] — 2023-01-05
-
-Добавил TextMesh Pro
-
-
-# [0.1.2] — 2023-01-05
-
-Добавил BuildReport. И настроил папки по умолчанию
-
-
-# [0.1.1] — 2023-01-05
-
-Добавил ConsolePro
-Удалил сгенерившуюся папку Assets/Third-party/Plugins
-
-
-# [0.1.0] — 2023-01-05
-
-Переименовал папку **Assets/Third-party/Plugins** в **Editor**. Теперь ассеты из этой папки не будут включатся в билд. Что избавило от компиляционных ошибок из-за **HierarhyPro**
-
-
-# [0.0.6] — 2023-01-05
-
-Добавил **HierarchyPro** и настроил
+```
 
 
-# [0.0.5] — 2023-01-05
+# Changelog
+## [0.1.0] — 2023-02-20
 
-### Добавлено
-1. Hierarhy 2
-2. RainbowFolders
-3. SuperPivot
+### Added
+#### Unity
+Amplify Shader Editor - v1.9.1  
+Amplify Shader Pack - v1.0.3  
+UModeler - v2.9.20  
+Rewired - v1.1.41.5  
+All Settings Pro - v1.0.5  
+#### README.md
+Assets list block  
+Project structure block  
 
+### Changed
+Updated the project version from 2020.3.43f1 to 2021.3.19f1  
+Updated Horizon Based Ambient Occlusion  
+Input System settings to Old  
 
-# [0.0.4] — 2023-01-05
+### Removed
+RainbowFolders  
+I2 Localization  
+Lux URP Essentials  
+Bolt  
 
-Добавил структуру папок по **Ramen Unity Style Guide** из https://github.com/Goossyaa/Unity-file-structure-exapmle
+### Fixed 
+Renamed folder «zzz Trash zzz» to «zzzTrash» to get rid of the spaces  
+  
+## [0.0.1] — 2023-02-18
 
-
-# [0.0.3] — 2023-01-05
-
-Удалил стандартные ассеты. Кроме папок с настройками, пресетами и скриптами
-
-
-# [0.0.2] — 2023-01-05
-
-1. Создан проект Юнити по шаблону **3D Sample Scene (URP)**
-2. Добавлен .gitignore
-
-
-# [0.0.1] — 2023-01-05
-
-Создан репозиторий
+Created a repository using the template https://github.com/Goossyaa/Default-Unity-URP  

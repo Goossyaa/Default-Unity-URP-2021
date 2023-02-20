@@ -12,6 +12,8 @@ struct DeinterleavedOutput {
 
 DeinterleavedOutput DeinterleaveDepth_Frag(Varyings input)
 {
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
     DeinterleavedOutput o;
 
     float2 pos = floor(input.uv * _DeinterleavedAO_TexelSize.zw) * 4.0;
@@ -29,6 +31,8 @@ DeinterleavedOutput DeinterleaveDepth_Frag(Varyings input)
 
 DeinterleavedOutput DeinterleaveNormals_Frag(Varyings input)
 {
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
     DeinterleavedOutput o;
 
     float2 pos = floor(input.uv * _DeinterleavedAO_TexelSize.zw) * 4.0;
@@ -47,6 +51,8 @@ DeinterleavedOutput DeinterleaveNormals_Frag(Varyings input)
 
 half4 ReinterleaveAO_Frag(Varyings input) : SV_Target
 {
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
     float2 offset = fmod(floor(input.uv * _ReinterleavedAO_TexelSize.zw), 4.0);
     float2 uv = (floor(input.uv * _DeinterleavedAO_TexelSize.zw) + (offset * _DeinterleavedAO_TexelSize.zw) + 0.5) * _ReinterleavedAO_TexelSize.xy;
 

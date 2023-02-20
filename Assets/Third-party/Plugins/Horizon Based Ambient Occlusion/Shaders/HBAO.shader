@@ -35,9 +35,9 @@
     float4 _DeinterleavedAO_TexelSize;
     float4 _ReinterleavedAO_TexelSize;
     float4 _TargetScale;
-	float4 _UVToView;
-	float4x4 _WorldToCameraMatrix;
-	float _Radius;
+	float4 _UVToView[2];
+	//float4x4 _WorldToCameraMatrix;
+	float _Radius[2];
 	float _MaxRadiusPixels;
 	float _NegInvRadius2;
 	float _AngleBias;
@@ -73,6 +73,8 @@
     struct Attributes
     {
         float3 vertex : POSITION;
+
+        UNITY_VERTEX_INPUT_INSTANCE_ID
     };
 
     struct Varyings
@@ -83,6 +85,8 @@
         //#if STEREO_INSTANCING_ENABLED
         //uint stereoTargetEyeIndex : SV_RenderTargetArrayIndex;
         //#endif
+
+        UNITY_VERTEX_OUTPUT_STEREO
     };
 
     float2 TransformTriangleVertexToUV(float2 vertex)
@@ -94,6 +98,11 @@
     Varyings Vert_Default(Attributes input)
     {
         Varyings o;
+
+        UNITY_SETUP_INSTANCE_ID(input);
+        UNITY_INITIALIZE_OUTPUT(Varyings, o);
+        UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
         o.vertex = float4(input.vertex.xy, 0.0, 1.0);
         o.uv = TransformTriangleVertexToUV(input.vertex.xy);
 
@@ -110,6 +119,11 @@
     Varyings Vert_Atlas(Attributes input)
     {
         Varyings o;
+
+        UNITY_SETUP_INSTANCE_ID(input);
+        UNITY_INITIALIZE_OUTPUT(Varyings, o);
+        UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
         o.vertex = float4((input.vertex.xy + float2(-3.0, 1.0)) * (_DeinterleavedAO_TexelSize.zw / _ReinterleavedAO_TexelSize.zw) + 2.0 * _AtlasOffset * _ReinterleavedAO_TexelSize.xy, 0.0, 1.0);
         o.uv = TransformTriangleVertexToUV(input.vertex.xy);
 
@@ -125,6 +139,11 @@
     Varyings Vert_UVTransform(Attributes input)
     {
         Varyings o;
+
+        UNITY_SETUP_INSTANCE_ID(input);
+        UNITY_INITIALIZE_OUTPUT(Varyings, o);
+        UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
         o.vertex = float4(input.vertex.xy, 0.0, 1.0);
         o.uv = TransformTriangleVertexToUV(input.vertex.xy) * _UVTransform.xy + _UVTransform.zw;
 
@@ -149,32 +168,31 @@
             Name "HBAO - AO"
 
 			CGPROGRAM
-            #pragma multi_compile_local __ DEFERRED_SHADING ORTHOGRAPHIC_PROJECTION
-            #pragma multi_compile_local __ COLOR_BLEEDING
-            #pragma multi_compile_local __ OFFSCREEN_SAMPLES_CONTRIBUTION
-            #pragma multi_compile_local __ NORMALS_CAMERA NORMALS_RECONSTRUCT
-            #pragma multi_compile_local __ INTERLEAVED_GRADIENT_NOISE
-            #pragma multi_compile_local DIRECTIONS_3 DIRECTIONS_4 DIRECTIONS_6 DIRECTIONS_8
-            #pragma multi_compile_local STEPS_2 STEPS_3 STEPS_4 STEPS_6
+            #pragma multi_compile_local_fragment __ DEFERRED_SHADING ORTHOGRAPHIC_PROJECTION
+            #pragma multi_compile_local_fragment __ COLOR_BLEEDING
+            #pragma multi_compile_local_fragment __ OFFSCREEN_SAMPLES_CONTRIBUTION
+            #pragma multi_compile_local_fragment __ NORMALS_CAMERA NORMALS_RECONSTRUCT
+            #pragma multi_compile_local_fragment __ INTERLEAVED_GRADIENT_NOISE
+            #pragma multi_compile_local_fragment QUALITY_LOWEST QUALITY_LOW QUALITY_MEDIUM QUALITY_HIGH QUALITY_HIGHEST
 
-            #if DIRECTIONS_3
+            #if QUALITY_LOWEST
                 #define DIRECTIONS  3
-            #elif DIRECTIONS_4
-                #define DIRECTIONS  4
-            #elif DIRECTIONS_6
-                #define DIRECTIONS  6
-            #elif DIRECTIONS_8
-                #define DIRECTIONS  8
-            #endif
-
-            #if STEPS_2
                 #define STEPS       2
-            #elif STEPS_3
+            #elif QUALITY_LOW
+                #define DIRECTIONS  4
                 #define STEPS       3
-            #elif STEPS_4
+            #elif QUALITY_MEDIUM
+                #define DIRECTIONS  6
                 #define STEPS       4
-            #elif STEPS_6
+            #elif QUALITY_HIGH
+                #define DIRECTIONS  8
+                #define STEPS       4
+            #elif QUALITY_HIGHEST
+                #define DIRECTIONS  8
                 #define STEPS       6
+            #else
+                #define DIRECTIONS  1
+                #define STEPS       1
             #endif
 
             #pragma vertex Vert_Default
@@ -189,30 +207,29 @@
             Name "HBAO - AO Deinterleaved"
 
 			CGPROGRAM
-            #pragma multi_compile_local __ DEFERRED_SHADING ORTHOGRAPHIC_PROJECTION
-            #pragma multi_compile_local __ COLOR_BLEEDING
-            #pragma multi_compile_local __ OFFSCREEN_SAMPLES_CONTRIBUTION
-            #pragma multi_compile_local DIRECTIONS_3 DIRECTIONS_4 DIRECTIONS_6 DIRECTIONS_8
-            #pragma multi_compile_local STEPS_2 STEPS_3 STEPS_4 STEPS_6
+            #pragma multi_compile_local_fragment __ DEFERRED_SHADING ORTHOGRAPHIC_PROJECTION
+            #pragma multi_compile_local_fragment __ COLOR_BLEEDING
+            #pragma multi_compile_local_fragment __ OFFSCREEN_SAMPLES_CONTRIBUTION
+            #pragma multi_compile_local_fragment QUALITY_LOWEST QUALITY_LOW QUALITY_MEDIUM QUALITY_HIGH QUALITY_HIGHEST
 
-            #if DIRECTIONS_3
+            #if QUALITY_LOWEST
                 #define DIRECTIONS  3
-            #elif DIRECTIONS_4
-                #define DIRECTIONS  4
-            #elif DIRECTIONS_6
-                #define DIRECTIONS  6
-            #elif DIRECTIONS_8
-                #define DIRECTIONS  8
-            #endif
-
-            #if STEPS_2
                 #define STEPS       2
-            #elif STEPS_3
+            #elif QUALITY_LOW
+                #define DIRECTIONS  4
                 #define STEPS       3
-            #elif STEPS_4
+            #elif QUALITY_MEDIUM
+                #define DIRECTIONS  6
                 #define STEPS       4
-            #elif STEPS_6
+            #elif QUALITY_HIGH
+                #define DIRECTIONS  8
+                #define STEPS       4
+            #elif QUALITY_HIGHEST
+                #define DIRECTIONS  8
                 #define STEPS       6
+            #else
+                #define DIRECTIONS  1
+                #define STEPS       1
             #endif
 
             #define DEINTERLEAVED
@@ -241,8 +258,8 @@
             Name "HBAO - Deinterleave Normals"
 
             CGPROGRAM
-            #pragma multi_compile_local __ ORTHOGRAPHIC_PROJECTION
-            #pragma multi_compile_local __ NORMALS_CAMERA NORMALS_RECONSTRUCT
+            #pragma multi_compile_local_fragment __ ORTHOGRAPHIC_PROJECTION
+            #pragma multi_compile_local_fragment __ NORMALS_CAMERA NORMALS_RECONSTRUCT
 
             #pragma vertex Vert_Default
             #pragma fragment DeinterleaveNormals_Frag
@@ -259,7 +276,10 @@
             #pragma vertex Vert_Atlas
             #pragma fragment Frag
 
-            half4 Frag(Varyings input) : SV_Target {
+            half4 Frag(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
                 return UNITY_SAMPLE_SCREENSPACE_TEXTURE(_MainTex, input.uv);
             }
 			ENDCG
@@ -282,9 +302,9 @@
             Name "HBAO - Blur"
 
 			CGPROGRAM
-            #pragma multi_compile_local __ ORTHOGRAPHIC_PROJECTION
-            #pragma multi_compile_local __ COLOR_BLEEDING
-            #pragma multi_compile_local BLUR_RADIUS_2 BLUR_RADIUS_3 BLUR_RADIUS_4 BLUR_RADIUS_5
+            #pragma multi_compile_local_fragment __ ORTHOGRAPHIC_PROJECTION
+            #pragma multi_compile_local_fragment __ COLOR_BLEEDING
+            #pragma multi_compile_local_fragment BLUR_RADIUS_2 BLUR_RADIUS_3 BLUR_RADIUS_4 BLUR_RADIUS_5
 
             #if BLUR_RADIUS_2
                 #define KERNEL_RADIUS  2
@@ -294,6 +314,8 @@
                 #define KERNEL_RADIUS  4
             #elif BLUR_RADIUS_5
                 #define KERNEL_RADIUS  5
+            #else
+                #define KERNEL_RADIUS  0
             #endif
 
             #pragma vertex Vert_Default
@@ -308,8 +330,8 @@
             Name "HBAO - Temporal Filter"
 
             CGPROGRAM
-            #pragma multi_compile_local __ COLOR_BLEEDING
-            #pragma multi_compile_local __ VARIANCE_CLIPPING_4TAP VARIANCE_CLIPPING_8TAP
+            #pragma multi_compile_local_fragment __ COLOR_BLEEDING
+            #pragma multi_compile_local_fragment __ VARIANCE_CLIPPING_4TAP VARIANCE_CLIPPING_8TAP
 
             #pragma vertex Vert_Default
             #pragma fragment TemporalFilter_Frag
@@ -326,7 +348,10 @@
             #pragma vertex Vert_Default
             #pragma fragment Frag
 
-            half4 Frag(Varyings input) : SV_Target {
+            half4 Frag(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
                 return UNITY_SAMPLE_SCREENSPACE_TEXTURE(_MainTex, input.uv);
             }
             ENDCG
@@ -339,9 +364,9 @@
             ColorMask RGB
 
             CGPROGRAM
-            #pragma multi_compile_local __ COLOR_BLEEDING
-            #pragma multi_compile_local __ MULTIBOUNCE
-            #pragma multi_compile_local __ DEBUG_AO DEBUG_COLORBLEEDING DEBUG_NOAO_AO DEBUG_AO_AOONLY DEBUG_NOAO_AOONLY
+            #pragma multi_compile_local_fragment __ COLOR_BLEEDING
+            #pragma multi_compile_local_fragment __ MULTIBOUNCE
+            #pragma multi_compile_local_fragment __ DEBUG_AO DEBUG_COLORBLEEDING DEBUG_NOAO_AO DEBUG_AO_AOONLY DEBUG_NOAO_AOONLY
 
             #pragma vertex Vert_UVTransform
             #pragma fragment Composite_Frag
@@ -355,9 +380,9 @@
             Name "HBAO - Composite AfterLighting"
 
             CGPROGRAM
-            #pragma multi_compile_local __ COLOR_BLEEDING
-            #pragma multi_compile_local __ MULTIBOUNCE
-            #pragma multi_compile_local __ LIGHTING_LOG_ENCODED
+            #pragma multi_compile_local_fragment __ COLOR_BLEEDING
+            #pragma multi_compile_local_fragment __ MULTIBOUNCE
+            #pragma multi_compile_local_fragment __ LIGHTING_LOG_ENCODED
 
             #pragma vertex Vert_Default
             #pragma fragment Composite_Frag
@@ -371,8 +396,8 @@
             Name "HBAO - Composite BeforeReflections"
 
             CGPROGRAM
-            #pragma multi_compile_local __ COLOR_BLEEDING
-            #pragma multi_compile_local __ LIGHTING_LOG_ENCODED
+            #pragma multi_compile_local_fragment __ COLOR_BLEEDING
+            #pragma multi_compile_local_fragment __ LIGHTING_LOG_ENCODED
 
             #pragma vertex Vert_Default
             #pragma fragment Composite_Lit_Frag
@@ -383,13 +408,46 @@
 
         // 12
         Pass {
+            Name "HBAO - Composite BlendAO"
+
+            ColorMask RGB
+            Blend Zero SrcColor
+
+            CGPROGRAM
+            #pragma multi_compile_local_fragment __ MULTIBOUNCE
+
+            #pragma vertex Vert_UVTransform
+            #pragma fragment Composite_Frag_BlendAO
+
+            #include "HBAO_Composite.cginc"
+            ENDCG
+        }
+
+        // 13
+        Pass {
+            Name "HBAO - Composite BlendCB"
+
+            ColorMask RGB
+            Blend One One
+
+            CGPROGRAM
+
+            #pragma vertex Vert_UVTransform
+            #pragma fragment Composite_Frag_BlendCB
+
+            #include "HBAO_Composite.cginc"
+            ENDCG
+        }
+
+        // 14
+        Pass {
             Name "HBAO - Debug ViewNormals"
 
             ColorMask RGB
 
             CGPROGRAM
-            #pragma multi_compile_local __ ORTHOGRAPHIC_PROJECTION
-            #pragma multi_compile_local __ NORMALS_CAMERA NORMALS_RECONSTRUCT
+            #pragma multi_compile_local_fragment __ ORTHOGRAPHIC_PROJECTION
+            #pragma multi_compile_local_fragment __ NORMALS_CAMERA NORMALS_RECONSTRUCT
 
             #pragma vertex Vert_UVTransform
             #pragma fragment AO_Frag
