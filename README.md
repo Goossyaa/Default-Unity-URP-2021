@@ -92,6 +92,7 @@ Amplify Shader Pack - v1.0.3
 UModeler - v2.9.20  
 Rewired - v1.1.41.5  
 All Settings Pro - v1.0.5  
+Fullscreen Editor - v2.2.7
 #### README.md
 Assets list block  
 Project structure block  
