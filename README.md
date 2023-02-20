@@ -44,7 +44,7 @@ SuperPivot
 ```
 Assets
 |---Art
-|	|---Animations		Animationa and animators
+|	|---Animations		Animations and animators
 |	|---Fonts		Fonts converted by TextMesh Pro 
 |	|---Materials
 |	|---Models		FBX and BLEND files
