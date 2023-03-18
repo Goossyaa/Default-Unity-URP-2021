@@ -1,9 +1,9 @@
 # Default Unity URP 2021
-Unity 2021.3.19f1
+Unity 2021.3.21f1
   
 # Assets list
 ## Unity
-2D Animations - 7.0.9  
+2D Animations - 7.0.10  
 2D Sprite - 1.0.0  
 Animation Rigging - 1.1.1  
 Burst - 1.8.2  
@@ -27,8 +27,7 @@ Beautify 3 - v15.5
 DOTween Pro - v1.0.310  
 Feel - v3.5  
 FMOD  
-Rewired - v1.1.41.5  
-UModeler - v2.9.20  
+Rewired - v1.1.41.5 
 All Settings Pro - v1.0.5  
 
 ### Editor
@@ -44,12 +43,12 @@ SuperPivot
 ```
 Assets
 |---Art
-|	|---Animations		Animations and animators
+|	|---Animations
+|	|---Animators
 |	|---Fonts		Fonts converted by TextMesh Pro 
 |	|---Materials
 |	|---Models		FBX and BLEND files
-|	|---Textures		PNG files
-|	|---VFX			VFX graph files
+|	|---Textures		All images 
 |
 |---Audio
 |	|---Music
@@ -58,6 +57,7 @@ Assets
 |---Code
 | 	|---Scripts		C# scripts
 | 	|---Shaders 		Shader files and shader graphs
+|	|---VFX			VFX graph files
 |
 |---Level 			Anything related to game design in Unity
 | 	|---Prefabs
@@ -83,6 +83,28 @@ Assets
 
 
 # Changelog
+## [0.1.1] — 2023-03-18
+
+### Added
+New high quality **HDRIs**  
+**Animators** folder
+
+
+### Changed
+#### Unity
+Updated the project version from 2021.3.19f1 to **2021.3.21f1**  
+Moved **VFX** folder from /Art to **/Code**
+
+#### README.md
+Tweaked **Project structure**  
+Updated **Changelog**
+
+
+### Removed
+Delete old **HDRIs**  
+UModeler
+
+
 ## [0.1.0] — 2023-02-20
 
 ### Added
@@ -98,7 +120,7 @@ Assets list block
 Project structure block  
 
 ### Changed
-Updated the project version from 2020.3.43f1 to 2021.3.19f1  
+Updated the project version from 2020.3.43f1 to **2021.3.19f1**  
 Updated Horizon Based Ambient Occlusion  
 Input System settings to Old  
 
