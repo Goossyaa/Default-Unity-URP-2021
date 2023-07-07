@@ -1,5 +1,5 @@
 # Default Unity URP 2021
-Unity 2021.3.21f1
+Unity 2021.3.25f1
   
 # Assets list
 ## Unity
@@ -21,22 +21,23 @@ Visual Scripting - 1.8.0
   
 ## Third-party
 ### Plugins
-Amplify Shader Editor - v1.9.1  
-Amplify Shader Pack - v1.0.3  
-Beautify 3 - v15.5  
-DOTween Pro - v1.0.310  
-Feel - v3.5  
+Amplify Shader Editor - 1.9.1  
+Amplify Shader Pack - 1.0.3  
+Beautify 3 - 15.5  
+DOTween Pro - 1.0.310  
+Feel - 3.5  
 FMOD  
-Rewired - v1.1.41.5 
-All Settings Pro - v1.0.5  
+Rewired - 1.1.41.5 
+All Settings Pro - 1.0.5  
+Fast script reload - 1.5
 
 ### Editor
-Build Report - v3.4.14  
+Build Report - 3.4.14  
 ConsolePro  
-Grabbit - v2021.0.8  
+Grabbit - 2021.0.8  
 Hierarchy 2  
-Hierarchy Pro - Extended v2022.1.4  
-Shader Control - v6.2.1  
+Hierarchy Pro - Extended 2022.1.4  
+Shader Control - 6.2.1  
 SuperPivot  
   
 # Project structure
@@ -83,6 +84,20 @@ Assets
 
 
 # Changelog
+## [0.1.2] — 2023-07-07
+
+### Added
+Fast script reload
+
+### Changed
+#### Unity
+Updated project version to 2021.03.25f1
+
+#### README.md
+Remove "v" prefix from versions, in third-party assets list
+
+
+
 ## [0.1.1] — 2023-03-18
 
 ### Added
